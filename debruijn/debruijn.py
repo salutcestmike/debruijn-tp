@@ -95,6 +95,10 @@ def get_arguments():  # pragma: no cover
     )
     return parser.parse_args()
 
+def print_even(test_list) :
+    for i in test_list:
+        if i % 2 == 0:
+            yield i
 
 def read_fastq(fastq_file: Path) -> Iterator[str]:
     """Extract reads from fastq files.
@@ -102,8 +106,17 @@ def read_fastq(fastq_file: Path) -> Iterator[str]:
     :param fastq_file: (Path) Path to the fastq file.
     :return: A generator object that iterate the read sequences.
     """
-    pass
+    with open(fastq_file) as f:
+        while True:
+            f.readline()
+            sequence = f.readline()
+            f.readline()
+            f.readline()
 
+            if not sequence:
+                break
+
+            yield sequence.strip()
 
 def cut_kmer(read: str, kmer_size: int) -> Iterator[str]:
     """Cut read into kmers of size kmer_size.
@@ -111,7 +124,8 @@ def cut_kmer(read: str, kmer_size: int) -> Iterator[str]:
     :param read: (str) Sequence of a read.
     :return: A generator object that provides the kmers (str) of size kmer_size.
     """
-    pass
+    for i in range(len(read) - kmer_size + 1):
+        yield read[i : i + kmer_size]
 
 
 def build_kmer_dict(fastq_file: Path, kmer_size: int) -> Dict[str, int]:
@@ -120,8 +134,13 @@ def build_kmer_dict(fastq_file: Path, kmer_size: int) -> Dict[str, int]:
     :param fastq_file: (str) Path to the fastq file.
     :return: A dictionnary object that identify all kmer occurrences.
     """
-    pass
+    kmer_dict = {}
 
+    for sequence in read_fastq(fastq_file):
+        for kmer in cut_kmer(sequence, kmer_size):
+            kmer_dict[kmer] = kmer_dict.get(kmer, 0) + 1
+
+    return kmer_dict
 
 def build_graph(kmer_dict: Dict[str, int]) -> DiGraph:
     """Build the debruijn graph
@@ -296,6 +315,8 @@ def main() -> None:  # pragma: no cover
     """
     # Get arguments
     args = get_arguments()
+    
+    print(build_kmer_dict(args.fastq_file, args.kmer_size))
 
     # Fonctions de dessin du graphe
     # A decommenter si vous souhaitez visualiser un petit
