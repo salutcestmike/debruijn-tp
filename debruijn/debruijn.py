@@ -171,7 +171,11 @@ def remove_paths(
     :param delete_sink_node: (boolean) True->We remove the last node of a path
     :return: (nx.DiGraph) A directed graph object
     """
-    pass
+    for path in path_list:
+        start = 0 if delete_entry_node else 1
+        end = len(path) if delete_sink_node else len(path) - 1
+        graph.remove_nodes_from(path[start:end])
+    return graph
 
 
 def select_best_path(
@@ -192,7 +196,16 @@ def select_best_path(
     :param delete_sink_node: (boolean) True->We remove the last node of a path
     :return: (nx.DiGraph) A directed graph object
     """
-    pass
+    if len(path_list) > 1 and statistics.stdev(weight_avg_list) > 0:
+        best = weight_avg_list.index(max(weight_avg_list))
+    elif len(path_list) > 1 and statistics.stdev(path_length) > 0:
+        best = path_length.index(max(path_length))
+    else:
+        best = randint(0, len(path_list) - 1)
+    paths_to_remove = path_list[:best] + path_list[best + 1 :]
+    return remove_paths(graph, paths_to_remove, delete_entry_node, delete_sink_node)
+
+    
 
 
 def path_average_weight(graph: DiGraph, path: List[str]) -> float:
