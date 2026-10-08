@@ -30,7 +30,7 @@ import matplotlib
 from operator import itemgetter
 import random
 
-from itertools import product
+from itertools import product, combinations
 
 random.seed(9001)
 from random import randint
@@ -228,7 +228,12 @@ def solve_bubble(graph: DiGraph, ancestor_node: str, descendant_node: str) -> Di
     :param descendant_node: (str) A downstream node in the graph
     :return: (nx.DiGraph) A directed graph object
     """
-    pass
+    path_list = list(all_simple_paths(graph, ancestor_node, descendant_node))
+    path_length = [len(path) for path in path_list]
+    weight_avg_list = [path_average_weight(graph, path) for path in path_list]
+    return select_best_path(graph, path_list, path_length, weight_avg_list)
+
+
 
 
 def simplify_bubbles(graph: DiGraph) -> DiGraph:
@@ -237,7 +242,26 @@ def simplify_bubbles(graph: DiGraph) -> DiGraph:
     :param graph: (nx.DiGraph) A directed graph object
     :return: (nx.DiGraph) A directed graph object
     """
-    pass
+    bubble = True
+    while bubble:
+        bubble = False
+        for node in graph.nodes:
+            predecessors = list(graph.predecessors(node))
+            if len(predecessors) < 2:
+                continue
+            for pred_i, pred_j in combinations(predecessors, 2):
+                ancestor = lowest_common_ancestor(graph, pred_i, pred_j)
+                if ancestor is not None:
+                    bubble = True
+                    break
+            if bubble:
+                break
+        if bubble:
+            graph = solve_bubble(graph, ancestor, node)
+    return graph
+
+
+
 
 
 def solve_entry_tips(graph: DiGraph, starting_nodes: List[str]) -> DiGraph:
@@ -247,7 +271,32 @@ def solve_entry_tips(graph: DiGraph, starting_nodes: List[str]) -> DiGraph:
     :param starting_nodes: (list) A list of starting nodes
     :return: (nx.DiGraph) A directed graph object
     """
-    pass
+    tip = True
+    while tip:
+        tip = False
+        starting_nodes = [n for n in starting_nodes if n in graph]
+        for node in graph.nodes:
+            if len(list(graph.predecessors(node))) < 2:
+                continue
+            path_list = []
+            for start in starting_nodes:
+                if start != node and has_path(graph, start, node):
+                    path_list.extend(all_simple_paths(graph, start, node))
+            if len(path_list) > 1:
+                tip = True
+                path_length = [len(path) for path in path_list]
+                weight_avg_list = [path_average_weight(graph, p) for p in path_list]
+                graph = select_best_path(
+                    graph,
+                    path_list,
+                    path_length,
+                    weight_avg_list,
+                    delete_entry_node=True,
+                    delete_sink_node=False,
+                )
+                break
+    return graph
+
 
 
 def solve_out_tips(graph: DiGraph, ending_nodes: List[str]) -> DiGraph:
@@ -257,7 +306,32 @@ def solve_out_tips(graph: DiGraph, ending_nodes: List[str]) -> DiGraph:
     :param ending_nodes: (list) A list of ending nodes
     :return: (nx.DiGraph) A directed graph object
     """
-    pass
+    tip = True
+    while tip:
+        tip = False
+        ending_nodes = [n for n in ending_nodes if n in graph]
+        for node in graph.nodes:
+            if len(list(graph.successors(node))) < 2:
+                continue
+            path_list = []
+            for end in ending_nodes:
+                if end != node and has_path(graph, node, end):
+                    path_list.extend(all_simple_paths(graph, node, end))
+            if len(path_list) > 1:
+                tip = True
+                path_length = [len(path) for path in path_list]
+                weight_avg_list = [path_average_weight(graph, p) for p in path_list]
+                graph = select_best_path(
+                    graph,
+                    path_list,
+                    path_length,
+                    weight_avg_list,
+                    delete_entry_node=False,
+                    delete_sink_node=True,
+                )
+                break
+    return graph
+
 
 
 def get_starting_nodes(graph: DiGraph) -> List[str]:
